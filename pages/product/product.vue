@@ -5,12 +5,12 @@
 			<input type="text" value="" placeholder="搜索商品" placeholder-class="placeholder" />
 		</view>
 		<view class="list">
-			<view class="row">
+			<view class="row" v-for="(item,index) in goodslist" @click="godetail(item.id)" :key="index">
 				<!-- <view class="row"> -->
-				<image src="../../static/classify/1.jpg" mode="widthFix"></image>
+				<image :src="baseUrl +  item.img" mode="widthFix"></image>
 				<view class="info">
-					<text>{{item.catename}}</text>
-					<text>￥120</text>
+					<text>{{item.goodsname}}</text>
+					<text>￥{{item.price}}</text>
 					<text>3565评论</text>
 				</view>
 			</view>
@@ -25,14 +25,32 @@
 	export default {
 		data() {
 			return {
-				
+				goodslist: [],
 			}
 		},
-		onLoad() {
-			
+		onLoad(options) {
+			console.log(options.id);
+			this.getgoodslist(options.id)
 		},
 		methods: {
-			
+			getgoodslist(fid, page = 1, size = 10) {
+				this.http({
+					url: '/api/getcategoodPage',
+					data: {
+						fid,
+						page,
+						size
+					}
+				}).then(res => {
+					this.goodslist = res.data.list ? res.data.list[1] || [] : [];
+					console.log(this.goodslist);
+				})
+			},
+			godetail(id) {
+				uni.navigateTo({
+					url: '../details/details?id=' + id,
+				})
+			},
 		}
 
 	}

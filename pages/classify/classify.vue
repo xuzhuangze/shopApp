@@ -49,6 +49,7 @@
 			}
 		},
 		onLoad(options) {
+			console.log(options);
 			this.getfistcate();
 		},
 		methods: {

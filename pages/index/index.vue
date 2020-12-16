@@ -9,7 +9,7 @@
 		</view>
 		<!-- 快速分类导航 滚动视图 -->
 		<scroll-view scroll-x class="quicknav">
-			<view v-for="(item,index) in quicknav" @click="gosecondcate(item.id)" :key="index">
+			<view v-for="(item,index) in quicknav" @click="gogoodslist(item.id)" :key="index">
 				<text :class="index == topindex ? 'navactive' : '' ">{{item.catename}}</text>
 			</view>
 		</scroll-view>
@@ -21,7 +21,7 @@
 		</swiper>
 		<!-- 功能导航 -->
 		<view class="funnav">
-			<view class="funnavrow" v-for="(item,index) in funNavList" :key="index">
+			<view class="funnavrow" v-for="(item,index) in funNavList" @click="gosecondcate(index,item.id)" :key="index">
 				<image :src="item.icon" mode="widthFix"></image>
 				<text>{{item.name}}</text>
 			</view>
@@ -35,15 +35,15 @@
 					<text>限时秒杀</text>
 				</view>
 				<view class="info">
-					<text>每天零点场，好货抢不停</text>
+					<text>{{this.activetip}}</text>
 				</view>
 				<view class="time">
-					<view>00</view>:
-					<view>00</view>:
-					<view>00</view>
-					<view>秒杀</view>
+					<view>{{parseInt(resttime / 3600) > 9 ? parseInt(resttime / 3600) : '0' + parseInt(resttime / 3600) }}</view>:
+					<view>{{ parseInt(resttime % 3600 / 60) > 9 ? parseInt(resttime % 3600 / 60) : '0' + parseInt(resttime % 3600 / 60)}}</view>:
+					<view>{{ parseInt(resttime % 60) > 9 ? parseInt(resttime % 60) : '0' + parseInt(resttime % 60)}}</view>
+					<view>{{seckill.title}}</view>
 				</view>
-				<image src="../../static/index/goods2.jpg" mode="widthFix" class="goodimg"></image>
+				<image :src="seckill.img" mode="widthFix" class="goodimg" @click="godetail(seckill.goodsid)"></image>
 			</view>
 			<!-- 秒杀右侧区域 -->
 			<view class="rightseckill">
@@ -89,7 +89,7 @@
 						<text>{{item.goodsname}}</text>
 						<text>现价格： ￥{{item.price}}</text>
 						<text>原价格：￥{{item.market_price}}</text>
-						<text>
+						<text @click="godetail(item.id)">
 							立即抢购
 						</text>
 					</view>
@@ -129,16 +129,20 @@
 				allgoods: [],
 				itemgoods: [],
 				bottomtabindex: 0,
+				seckill: {},
+				activetip: '',
+				resttime: {},
 			}
 
 		},
 		onLoad() {
 			this.getcate();
 			this.getbanner();
-			this.getallgoods();
-
+			this.getgoodslist();
+			this.getseckill();
 		},
 		methods: {
+			// 获取一级分类
 			getcate() {
 				this.http({
 					url: '/api/getcate'
@@ -146,6 +150,7 @@
 					this.quicknav = res.data.list;
 				})
 			},
+			// 获取轮播图
 			getbanner() {
 				this.http({
 					url: '/api/getbanner'
@@ -157,17 +162,21 @@
 					})
 				})
 			},
-			gosecondcate(id) {
+			// 去往二级分类
+			gosecondcate(index, id) {
+				if (index != 3) {
+					return
+				}
 				uni.navigateTo({
 					url: `../classify/classify?id=${id}`,
 				})
 			},
 			// 获取所有商品  选项卡
-			getallgoods() {
+			getgoodslist() {
 				this.http({
 					url: '/api/getindexgoods'
 				}).then(res => {
-					console.log(res);
+					// console.log(res);
 					this.allgoods = res.data.list ? res.data.list : [];
 					this.changetab(0)
 				})
@@ -180,6 +189,41 @@
 					item.img = this.baseUrl + item.img;
 				})
 			},
+			// 获取限时秒杀
+			getseckill() {
+				this.http({
+					url: '/api/getseckill'
+				}).then(res => {
+					this.seckill = res.data.list[0];
+					this.seckill.img = this.baseUrl + this.seckill.img;
+					let bt = parseInt(this.seckill.begintime);
+					let et = parseInt(this.seckill.endtime);
+					this.timer = setInterval(() => {
+						let nt = parseInt((new Date).getTime());
+						if (bt <= nt && et >= nt) {
+							this.activetip = '距离活动结束剩余'
+							this.resttime = (et - new Date().getTime()) / 1000;
+						} else if (this.seckill.begintime > (new Date).getTime()) {
+							this.activetip = ' 距离活动开始剩余 ';
+							this.resttime = (bt - new Date().getTime()) / 1000;
+						} else {
+							this.activetip = '暂无活动';
+							clearInterval(this.timer);
+						}
+					})
+				})
+			},
+			godetail(id) {
+				uni.navigateTo({
+					url: '../details/details?id=' + id,
+				})
+			},
+			gogoodslist(id) {
+				console.log(111);
+				uni.navigateTo({
+					url: '../product/product?id=' + id,
+				})
+			}
 		},
 	}
 </script>
